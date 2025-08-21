@@ -79,4 +79,5 @@ A aplicação possui:
 - **Integrais:** `x^2`, limite inferior 0, superior 2, resultado esperado `8/3 ≈ 2.6667`.
 
 ---
-
+## **Explicando o código**
+https://chatgpt.com/s/t_68a7ac461e548191a9faaffb8e970512
