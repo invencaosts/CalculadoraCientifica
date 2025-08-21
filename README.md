@@ -1,37 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Calculadora Científica
 
-## Getting Started
+Uma **Calculadora Científica** desenvolvida com **Next.js**, **React**, **TypeScript** e **Tailwind CSS**, capaz de realizar cálculos básicos, científicos e avançados, com suporte a teclado e histórico de operações.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## **Visão Geral**
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+A aplicação possui:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Modos de cálculo**:
+  - **Padrão**: Operações básicas (`+`, `-`, `×`, `÷`, `%`, `±`, `C`).
+  - **Científica**: Funções trigonométricas (`sin`, `cos`, `tan`), logaritmos (`ln`, `log`), exponenciais, potências e máximos/mínimos.
+  - **Avançada**: Limites e integrais definidas, com inputs de expressão, variável e intervalos.
+- **Histórico** das operações realizadas.
+- **Entrada via teclado**, compatível com números, operadores e comandos (`Enter`, `Escape`, `+`, `-`, `*`, `/`).
+- **Design moderno**, com bloco central destacado sobre fundo gradiente e seleção visual dos modos.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## **Tecnologias Utilizadas**
 
-To learn more about Next.js, take a look at the following resources:
+| Tecnologia      | Função |
+|-----------------|--------|
+| **Next.js**     | Estrutura do projeto, roteamento, SSR/SSG. |
+| **React**       | Componentização, gerenciamento de estado e eventos. |
+| **TypeScript**  | Tipagem estática e segurança de código. |
+| **Tailwind CSS**| Estilização rápida e responsiva via classes utilitárias. |
+| **JavaScript**  | Parser e avaliador de expressões matemáticas. |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## **Como Funciona**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# CalculadoraCientifica
+1. **Parser de expressões**:  
+   - O input do usuário é tokenizado, convertendo números, operadores e parênteses.
+   - As expressões são transformadas em **RPN (Reverse Polish Notation)**.
+   - O RPN é avaliado para retornar o resultado final.
+
+2. **Entrada de teclado**:  
+   - Suporte para números, operadores (`+`, `-`, `×`, `÷`), `Enter` para `=`, `Escape` para limpar, `.` para decimal.
+   - Atualiza o display em tempo real.
+
+3. **Histórico de cálculos**:  
+   - Cada operação realizada é adicionada a um histórico exibido abaixo da calculadora.
+
+4. **Modos de cálculo**:  
+   - **Padrão**: Calculadora básica.
+   - **Científica**: Adiciona funções matemáticas avançadas.
+   - **Avançada**: Inputs separados para limites e integrais definidas.
+
+---
+
+## **Casos de Teste**
+
+### Básico
+| Entrada | Resultado Esperado |
+|---------|------------------|
+| `1 + 2 =` | `3` |
+| `5 × 6 =` | `30` |
+| `9 ÷ 3 =` | `3` |
+| `±` após `5` | `-5` |
+| `%` após `50` | `0.5` |
+| `C` | limpa display |
+
+### Científico
+| Entrada | Resultado Esperado |
+|---------|------------------|
+| `sin(π/2) =` | `1` |
+| `cos(0) =` | `1` |
+| `ln(e) =` | `1` |
+| `log(100) =` | `2` |
+
+### Avançado
+- **Limites:** `(x^2 - 1)/(x - 1)` com x → 1, resultado esperado `2`.
+- **Integrais:** `x^2`, limite inferior 0, superior 2, resultado esperado `8/3 ≈ 2.6667`.
+
+---
+
