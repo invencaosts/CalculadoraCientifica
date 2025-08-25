@@ -17,8 +17,85 @@ export default function Home() {
   const [integralFrom, setIntegralFrom] = useState("");
   const [integralTo, setIntegralTo] = useState("");
 
-  // Função para calcular expressões básicas e científicas
-  const evaluateExpression = (expr: string) => {
+  // --- FUNÇÕES MATEMÁTICAS MANUAIS ---
+  function factorial(n: number): number {
+    if (n < 0) throw new Error("Fatorial inválido");
+    if (n === 0) return 1;
+    let f = 1;
+    for (let i = 1; i <= n; i++) f *= i;
+    return f;
+  }
+
+  function sin(x: number, terms = 15): number {
+    let s = 0;
+    for (let n = 0; n < terms; n++) {
+      s += ((-1) ** n * x ** (2 * n + 1)) / factorial(2 * n + 1);
+    }
+    return s;
+  }
+
+  function cos(x: number, terms = 15): number {
+    let c = 0;
+    for (let n = 0; n < terms; n++) {
+      c += ((-1) ** n * x ** (2 * n)) / factorial(2 * n);
+    }
+    return c;
+  }
+
+  function tan(x: number): number {
+    return sin(x) / cos(x);
+  }
+
+  // --- Funções trig em graus ---
+  function sinDeg(x: number) {
+    return sin((x * Math.PI) / 180);
+  }
+  function cosDeg(x: number) {
+    return cos((x * Math.PI) / 180);
+  }
+  function tanDeg(x: number) {
+    return tan((x * Math.PI) / 180);
+  }
+
+  function ln(x: number, terms = 20): number {
+    if (x <= 0) throw new Error("ln inválido");
+    x = (x - 1) / (x + 1);
+    let sum = 0;
+    for (let n = 0; n < terms; n++) {
+      sum += (1 / (2 * n + 1)) * x ** (2 * n + 1);
+    }
+    return 2 * sum;
+  }
+
+  function log10(x: number): number {
+    return ln(x) / ln(10);
+  }
+
+  function exp(x: number, terms = 20): number {
+    let sum = 1;
+    let term = 1;
+    for (let n = 1; n <= terms; n++) {
+      term *= x / n;
+      sum += term;
+    }
+    return sum;
+  }
+
+  function sqrt(x: number, tolerance = 1e-10): number {
+    if (x < 0) throw new Error("Raiz negativa");
+    let guess = x / 2;
+    while (Math.abs(guess * guess - x) > tolerance) {
+      guess = (guess + x / guess) / 2;
+    }
+    return guess;
+  }
+
+  function pow(x: number, y: number): number {
+    return exp(y * ln(x));
+  }
+
+  // --- PARSER ---
+  function evaluateExpression(expr: string): string {
     try {
       let parsed = expr
         .replace(/÷/g, "/")
@@ -26,26 +103,27 @@ export default function Home() {
         .replace(/−/g, "-")
         .replace(/π/g, Math.PI.toString())
         .replace(/e/g, Math.E.toString())
-        .replace(/√/g, "Math.sqrt")
-        .replace(/x\^y/g, "**")
-        .replace(/sin\(([^)]+)\)/g, "Math.sin($1)")
-        .replace(/cos\(([^)]+)\)/g, "Math.cos($1)")
-        .replace(/tan\(([^)]+)\)/g, "Math.tan($1)")
-        .replace(/ln\(([^)]+)\)/g, "Math.log($1)")
-        .replace(/log\(([^)]+)\)/g, "Math.log10($1)")
-        .replace(/exp\(([^)]+)\)/g, "Math.exp($1)")
-        .replace(/max\(([^)]+)\)/g, "Math.max($1)")
-        .replace(/min\(([^)]+)\)/g, "Math.min($1)");
-      return eval(parsed).toString();
+        .replace(/\^/g, "**");
+
+      // Substituir funções trig por versão em graus
+      parsed = parsed
+        .replace(/sin\(([^)]+)\)/g, "sinDeg($1)")
+        .replace(/cos\(([^)]+)\)/g, "cosDeg($1)")
+        .replace(/tan\(([^)]+)\)/g, "tanDeg($1)");
+
+      const result = Function(
+        "sinDeg,cosDeg,tanDeg,ln,log10,exp,sqrt,pow",
+        `return ${parsed}`
+      )(sinDeg, cosDeg, tanDeg, ln, log10, exp, sqrt, pow);
+
+      return result.toString();
     } catch {
       return "Erro";
     }
-  };
+  }
 
-  // Função para limites (simples)
   const calculateLimit = () => {
     try {
-      // Substitui a variável pelo valor aproximado
       const val = parseFloat(limitAt);
       const expr = limitExpr.replaceAll(limitVar, `(${val})`);
       const result = evaluateExpression(expr);
@@ -58,17 +136,16 @@ export default function Home() {
     }
   };
 
-  // Função para integrais (simples, método trapezoidal)
   const calculateIntegral = () => {
     try {
       const a = parseFloat(integralFrom);
       const b = parseFloat(integralTo);
-      const n = 1000; // subdivisões
+      const n = 1000;
       const dx = (b - a) / n;
       let sum = 0;
       for (let i = 0; i <= n; i++) {
         const x = a + i * dx;
-        let fx = evaluateExpression(integralExpr.replaceAll("x", `(${x})`));
+        const fx = evaluateExpression(integralExpr.replaceAll("x", `(${x})`));
         sum += parseFloat(fx) * (i === 0 || i === n ? 0.5 : 1);
       }
       const result = sum * dx;
@@ -77,6 +154,9 @@ export default function Home() {
       setHistory([`Erro na integral`, ...history]);
     }
   };
+
+  const formatDisplay = (value: string) =>
+    value.length > 12 ? value.slice(0, 12) + "..." : value;
 
   const handleButtonClick = (value: string) => {
     if (["+", "−", "×", "÷"].includes(value)) {
@@ -129,6 +209,26 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentInput, expression]);
 
+  // --- RENDER ---
+  const numberButtons = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "0", "."];
+  const operatorButtons = ["+", "−", "×", "÷", "=", "C", "±", "%"];
+  const scientificButtons = [
+    "sin",
+    "cos",
+    "tan",
+    "ln",
+    "log",
+    "√",
+    "x^y",
+    "π",
+    "e",
+    "max",
+    "min",
+    "exp",
+    "(",
+    ")",
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-r from-emerald-400 to-sky-300 flex flex-col items-center justify-center p-6">
       <h1 className="text-3xl md:text-4xl font-bold text-white mb-8 font-playwrite text-center">
@@ -141,21 +241,17 @@ export default function Home() {
       <section className="bg-white/20 backdrop-blur-xl shadow-2xl rounded-2xl p-6 w-full max-w-lg">
         {/* MODOS */}
         <div className="flex justify-center gap-6 mb-6 bg-black/30 rounded-xl p-1">
-          {[
-            { id: "padrao", label: "Padrão" },
-            { id: "cientifica", label: "Científica" },
-            { id: "avancada", label: "Avançada" },
-          ].map((opt) => (
+          {["padrao", "cientifica", "avancada"].map((opt) => (
             <button
-              key={opt.id}
-              onClick={() => setMode(opt.id as Mode)}
+              key={opt}
+              onClick={() => setMode(opt as Mode)}
               className={`flex-1 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                mode === opt.id
+                mode === opt
                   ? "bg-emerald-500 text-white shadow-lg"
                   : "text-white/70 hover:text-white hover:bg-black/40"
               }`}
             >
-              {opt.label}
+              {opt[0].toUpperCase() + opt.slice(1)}
             </button>
           ))}
         </div>
@@ -163,9 +259,10 @@ export default function Home() {
         {/* DISPLAY */}
         <div className="bg-black/40 rounded-xl p-4 w-full mb-4 text-right">
           <div className="text-sm text-white/70">{expression}</div>
-          <div className="text-3xl font-bold text-white">{currentInput}</div>
+          <div className="text-3xl font-bold text-white">
+            {formatDisplay(currentInput)}
+          </div>
         </div>
-
         {/* MODO PADRÃO */}
         {mode === "padrao" && (
           <div className="grid grid-cols-4 gap-3 w-full">
@@ -210,7 +307,7 @@ export default function Home() {
         {/* MODO CIENTÍFICA */}
         {mode === "cientifica" && (
           <div className="flex flex-col gap-4 w-full">
-            {/* FORMULAS */}
+            {/* LINHA DE FUNÇÕES CIENTÍFICAS */}
             <div className="grid grid-cols-4 gap-3 w-full mb-3">
               {[
                 "sin",
@@ -237,7 +334,8 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            {/* TECLADO NUMÉRICO */}
+
+            {/* TECLADO NUMÉRICO E OPERADORES */}
             <div className="grid grid-cols-4 gap-3 w-full">
               {[
                 "C",
@@ -278,10 +376,9 @@ export default function Home() {
           </div>
         )}
 
-        {/* MODO AVANÇADA */}
+        {/* Limites e Integrais */}
         {mode === "avancada" && (
-          <div className="flex flex-col gap-6">
-            {/* Limites */}
+          <div className="flex flex-col gap-6 mt-4">
             <div className="bg-black/20 rounded-xl p-4 flex flex-col gap-3">
               <h3 className="text-white font-semibold text-lg mb-2">
                 Cálculo de Limites
@@ -289,33 +386,32 @@ export default function Home() {
               <input
                 type="text"
                 placeholder="Expressão f(x)"
-                className="p-2 rounded-lg bg-black/30 text-white w-full outline-none"
                 value={limitExpr}
                 onChange={(e) => setLimitExpr(e.target.value)}
+                className="p-2 rounded-lg bg-black/30 text-white w-full outline-none"
               />
               <input
                 type="text"
                 placeholder="Variável"
-                className="p-2 rounded-lg bg-black/30 text-white w-full outline-none"
                 value={limitVar}
                 onChange={(e) => setLimitVar(e.target.value)}
+                className="p-2 rounded-lg bg-black/30 text-white w-full outline-none"
               />
               <input
                 type="text"
                 placeholder="Aproxima de"
-                className="p-2 rounded-lg bg-black/30 text-white w-full outline-none"
                 value={limitAt}
                 onChange={(e) => setLimitAt(e.target.value)}
+                className="p-2 rounded-lg bg-black/30 text-white w-full outline-none"
               />
               <button
-                className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 rounded-xl mt-2"
                 onClick={calculateLimit}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 rounded-xl mt-2"
               >
                 Calcular Limite
               </button>
             </div>
 
-            {/* Integrais */}
             <div className="bg-black/20 rounded-xl p-4 flex flex-col gap-3">
               <h3 className="text-white font-semibold text-lg mb-2">
                 Cálculo de Integrais
@@ -323,27 +419,27 @@ export default function Home() {
               <input
                 type="text"
                 placeholder="Expressão f(x)"
-                className="p-2 rounded-lg bg-black/30 text-white w-full outline-none"
                 value={integralExpr}
                 onChange={(e) => setIntegralExpr(e.target.value)}
+                className="p-2 rounded-lg bg-black/30 text-white w-full outline-none"
               />
               <input
                 type="text"
                 placeholder="Limite Inferior"
-                className="flex-1 p-2 rounded-lg bg-black/30 text-white outline-none"
                 value={integralFrom}
                 onChange={(e) => setIntegralFrom(e.target.value)}
+                className="flex-1 p-2 rounded-lg bg-black/30 text-white outline-none"
               />
               <input
                 type="text"
                 placeholder="Limite Superior"
-                className="flex-1 p-2 rounded-lg bg-black/30 text-white outline-none"
                 value={integralTo}
                 onChange={(e) => setIntegralTo(e.target.value)}
+                className="flex-1 p-2 rounded-lg bg-black/30 text-white outline-none"
               />
               <button
-                className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 rounded-xl mt-2"
                 onClick={calculateIntegral}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 rounded-xl mt-2"
               >
                 Calcular Integral
               </button>
