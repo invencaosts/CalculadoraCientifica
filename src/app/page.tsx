@@ -109,7 +109,8 @@ export default function Home() {
       parsed = parsed
         .replace(/sin\(([^)]+)\)/g, "sinDeg($1)")
         .replace(/cos\(([^)]+)\)/g, "cosDeg($1)")
-        .replace(/tan\(([^)]+)\)/g, "tanDeg($1)");
+        .replace(/tan\(([^)]+)\)/g, "tanDeg($1)")
+        .replace(/log\(([^)]+)\)/g, "log10($1)");
 
       const result = Function(
         "sinDeg,cosDeg,tanDeg,ln,log10,exp,sqrt,pow",
@@ -395,14 +396,14 @@ export default function Home() {
                 placeholder="Variável"
                 value={limitVar}
                 onChange={(e) => setLimitVar(e.target.value)}
-                className="p-2 rounded-lg bg-black/30 text-white w-full outline-none"
+                className="flex-1 p-2 rounded-lg bg-black/30 text-white outline-none"
               />
               <input
                 type="text"
                 placeholder="Aproxima de"
                 value={limitAt}
                 onChange={(e) => setLimitAt(e.target.value)}
-                className="p-2 rounded-lg bg-black/30 text-white w-full outline-none"
+                className="flex-1 p-2 rounded-lg bg-black/30 text-white outline-none"
               />
               <button
                 onClick={calculateLimit}
