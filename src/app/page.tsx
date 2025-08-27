@@ -26,6 +26,8 @@ export default function Home() {
     return f;
   }
 
+  // Série de Taylor: sin(x) ≈ Σ (-1)^n * x^(2n+1)/(2n+1)!
+  // terms = "n" de Taylor, é a quantidade de repetições.
   function sin(x: number, terms = 15): number {
     let s = 0;
     for (let n = 0; n < terms; n++) {
@@ -34,10 +36,12 @@ export default function Home() {
     return s;
   }
 
+  // Série de Taylor: cos(x) ≈ Σ (-1)^n * x^(2n)/(2n)!
   function cos(x: number, terms = 15): number {
     let c = 0;
     for (let n = 0; n < terms; n++) {
-      c += ((-1) ** n * x ** (2 * n)) / factorial(2 * n);
+      c += ((-1) ** n //Altera o sinal da série de Taylor.
+       * x ** (2 * n)) / factorial(2 * n);
     }
     return c;
   }
@@ -57,26 +61,60 @@ export default function Home() {
     return tan((x * Math.PI) / 180);
   }
 
-  function ln(x: number, terms = 20): number {
+  // ln via série de Taylor: ln((1+z)/(1-z)) = 2 Σ z^(2n+1)/(2n+1)
+  function ln(x: number, terms = 32): number {
     if (x <= 0) throw new Error("ln inválido");
-    x = (x - 1) / (x + 1);
+    const z = (x - 1) / (x + 1);
     let sum = 0;
     for (let n = 0; n < terms; n++) {
-      sum += (1 / (2 * n + 1)) * x ** (2 * n + 1);
+      sum += (z ** (2 * n + 1)) / (2 * n + 1);
     }
     return 2 * sum;
   }
 
-  function log10(x: number): number {
-    return ln(x) / ln(10);
+  // log base 10 via Taylor
+  // Série de Taylor: ln(1+z) ≈ Σ (-1)^(n+1) * z^n / n
+  function taylorLog10(x: number): number {
+    if (x <= 0) throw new Error("Log inválido");
+
+    let count = 0;
+    let tempX = x;
+
+    while (tempX >= 10) {
+      tempX /= 10;
+      count++;
+    }
+    while (tempX < 1) {
+      tempX *= 10;
+      count--;
+    }
+
+    if (tempX > 2) {
+      tempX /= 10;
+      count++;
+    }
+
+    const z = tempX - 1;
+    let result = 0;
+    const terms = 35;
+    const ln10 = 2.302585092994046;
+
+    //ln(1+z) ≈ Σ (-1)^(n+1) * z^n / n (ln x / ln 10)
+    for (let n = 1; n <= terms; n++) {
+      // ln10 = base 10 
+      const term = ((-1) ** (n + 1)) * (z ** n) / (n * ln10);
+      
+      result += term;
+    }
+
+    return count + result;
   }
 
-  function exp(x: number, terms = 20): number {
-    let sum = 1;
-    let term = 1;
-    for (let n = 1; n <= terms; n++) {
-      term *= x / n;
-      sum += term;
+  // Série de Taylor: e^x ≈ Σ x^n / n!
+  function exp(x: number, terms = 50): number {
+    let sum = 0;
+    for (let n = 0; n < terms; n++) {
+      sum += (x ** n) / factorial(n);
     }
     return sum;
   }
@@ -90,10 +128,6 @@ export default function Home() {
     return guess;
   }
 
-  function pow(x: number, y: number): number {
-    return exp(y * ln(x));
-  }
-
   // --- PARSER ---
   function evaluateExpression(expr: string): string {
     try {
@@ -102,20 +136,20 @@ export default function Home() {
         .replace(/×/g, "*")
         .replace(/−/g, "-")
         .replace(/π/g, Math.PI.toString())
-        .replace(/e/g, Math.E.toString())
-        .replace(/\^/g, "**");
+        .replace(/\be\b/g, Math.E.toString())
+        .replace(/√\(([^)]+)\)/g, "sqrt($1)")
+        .replace(/(\w+)\^(\w+)/g, "($1**$2)"); // usa ** nativo do JS
 
-      // Substituir funções trig por versão em graus
       parsed = parsed
         .replace(/sin\(([^)]+)\)/g, "sinDeg($1)")
         .replace(/cos\(([^)]+)\)/g, "cosDeg($1)")
         .replace(/tan\(([^)]+)\)/g, "tanDeg($1)")
-        .replace(/log\(([^)]+)\)/g, "log10($1)");
+        .replace(/log\(([^)]+)\)/g, "taylorLog10($1)");
 
       const result = Function(
-        "sinDeg,cosDeg,tanDeg,ln,log10,exp,sqrt,pow",
+        "sinDeg,cosDeg,tanDeg,ln,taylorLog10,exp,sqrt",
         `return ${parsed}`
-      )(sinDeg, cosDeg, tanDeg, ln, log10, exp, sqrt, pow);
+      )(sinDeg, cosDeg, tanDeg, ln, taylorLog10, exp, sqrt);
 
       return result.toString();
     } catch {
@@ -185,7 +219,7 @@ export default function Home() {
     } else if (["sin", "cos", "tan", "ln", "log", "√", "exp"].includes(value)) {
       setCurrentInput((prev) => `${value}(${prev})`);
     } else if (["max", "min"].includes(value)) {
-      setCurrentInput((prev) => `${value}(${prev},)`);
+      setCurrentInput((prev) => `${value}(${prev},`);
     } else if (value === "x^y") {
       setCurrentInput((prev) => `${prev}^`);
     } else {
@@ -211,7 +245,6 @@ export default function Home() {
   }, [currentInput, expression]);
 
   // --- RENDER ---
-  const numberButtons = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "0", "."];
   const operatorButtons = ["+", "−", "×", "÷", "=", "C", "±", "%"];
   const scientificButtons = [
     "sin",
@@ -230,7 +263,7 @@ export default function Home() {
     ")",
   ];
 
-  return (
+    return (
     <div className="min-h-screen bg-gradient-to-r from-emerald-400 to-sky-300 flex flex-col items-center justify-center p-6">
       <h1 className="text-3xl md:text-4xl font-bold text-white mb-8 font-playwrite text-center">
         Calculadora Científica
